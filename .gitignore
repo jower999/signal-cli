@@ -1,0 +1,39 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+*.log
+
+# Config files with real data (never commit)
+signal.json
+*.signal.json
+
+# Test artifacts
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Local development virtualenv
+.venv/
+venv/
+.venv
+venv
+
+# Editor / IDE
+.idea/
+*.swp
+*.swo
+
+# VS Code - keep useful project settings, ignore user-specific ones
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Project-specific test data
+schedule-*.png
+*.png
+!docs/*.png

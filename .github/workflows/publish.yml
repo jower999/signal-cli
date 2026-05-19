@@ -1,0 +1,50 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # For trusted publishing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install build
+
+      - name: Run tests
+        run: pytest
+
+      - name: Run linters
+        run: |
+          ruff check .
+          black --check .
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI (trusted publishing)
+        if: github.event_name == 'release'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # The environment must be configured in the PyPI project for trusted publishing
+
+      - name: Upload build artifacts (PRs)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
