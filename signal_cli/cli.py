@@ -44,7 +44,9 @@ def setup():
     if wrote_compose:
         typer.echo(f"✅ Installed recommended docker-compose.yml at {compose_path}")
         typer.echo("   (Using MODE=native for best linking compatibility.)")
-        typer.echo("   Start it with: docker compose -f ~/.signal-cli/docker-compose.yml up -d")
+        typer.echo(
+            "   Start it with: docker compose -f ~/.signal-cli/docker-compose.yml up -d"
+        )
     elif compose_path.exists():
         typer.echo(f"ℹ️  Using existing docker-compose at {compose_path}")
 
@@ -290,12 +292,8 @@ def link(device_name: str = "signal-cli"):
             "Make sure the signal-cli-rest-api is running on the configured URL."
         )
         compose_path = get_docker_compose_path()
-        typer.echo(
-            f"If you see 'UnsupportedOperationException', edit {compose_path}"
-        )
-        typer.echo(
-            "and set MODE=native (or normal), then restart the container."
-        )
+        typer.echo(f"If you see 'UnsupportedOperationException', edit {compose_path}")
+        typer.echo("and set MODE=native (or normal), then restart the container.")
         raise typer.Exit(1)
 
 

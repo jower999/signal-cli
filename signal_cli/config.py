@@ -5,9 +5,9 @@ import warnings
 from typing import Dict, Optional, Union
 
 try:
-    from importlib.resources import files, as_file
+    from importlib.resources import files
 except ImportError:  # Python < 3.9 fallback (we require >= 3.10 anyway)
-    from importlib_resources import files, as_file  # type: ignore
+    from importlib_resources import files  # type: ignore
 
 # Default configuration directory for standalone use.
 DEFAULT_CONFIG_DIR = Path.home() / ".signal-cli"
@@ -155,6 +155,7 @@ class SignalConfig:
 # Docker Compose helpers (installed alongside config)
 # --------------------------------------------------------------------- #
 
+
 def get_docker_compose_path() -> Path:
     """Return the default location for the recommended docker-compose.yml."""
     return DEFAULT_DOCKER_COMPOSE_FILE
@@ -190,7 +191,9 @@ def install_docker_compose(
     Returns:
         True if a file was written, False if it already existed and force=False.
     """
-    target = Path(target_path).expanduser() if target_path else DEFAULT_DOCKER_COMPOSE_FILE
+    target = (
+        Path(target_path).expanduser() if target_path else DEFAULT_DOCKER_COMPOSE_FILE
+    )
     target.parent.mkdir(parents=True, exist_ok=True)
 
     if target.exists() and not force:
