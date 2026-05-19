@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  signal-cli-rest-api:
+    image: bbernhard/signal-cli-rest-api:latest
+    container_name: signal-cli
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # MODE controls how signal-cli is executed inside the container.
+      # We default to 'native' for best device linking compatibility and good
+      # performance/memory characteristics for most linked-device use cases.
+      #
+      # Other supported values (from upstream signal-cli-rest-api):
+      #   - native            (recommended here): uses GraalVM native binary
+      #   - normal            (default upstream): spawns JVM per request (slowest)
+      #   - json-rpc          : long-lived JVM daemon (fastest, higher memory)
+      #   - json-rpc-native   : long-lived native binary daemon
+      #
+      # If you see 'UnsupportedOperationException' during linking or other
+      # odd behavior, try switching to 'native' (or 'normal') and restart.
+      - MODE=native
+    volumes:
+      - ${HOME}/.signal-cli/signal-data:/home/.local/share/signal-cli
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/about"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

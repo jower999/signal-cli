@@ -94,7 +94,12 @@ If a group is missing, the recommended first step is to send a message in it fro
 
 Sending requires a running `signal-cli-rest-api` container (usually managed via Docker Compose).
 
-The recommended compose file is installed to `~/.signal-cli/docker-compose.yml` (or you can manage it yourself).
+The recommended compose file is automatically installed to `~/.signal-cli/docker-compose.yml`
+when you run `signal-cli setup` (or you can manage it yourself).
+
+This package defaults to `MODE=native` in the generated compose file. `native` mode
+provides good performance while avoiding certain linking and compatibility issues
+that can occur with `json-rpc` mode (the upstream default in some contexts).
 
 ## Development
 

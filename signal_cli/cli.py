@@ -10,7 +10,11 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from .config import SignalConfig
+from .config import (
+    SignalConfig,
+    install_docker_compose,
+    get_docker_compose_path,
+)
 from .signal_client import SignalClient
 
 app = typer.Typer(help="Signal messaging client (send to groups and individuals)")
@@ -31,7 +35,18 @@ def setup():
     config.number = number
     config.api_url = api_url
     config.save()
+
+    # Ensure the recommended docker-compose.yml exists (with MODE=native by default)
+    wrote_compose = install_docker_compose()
+    compose_path = get_docker_compose_path()
+
     typer.echo("✅ Basic configuration saved.")
+    if wrote_compose:
+        typer.echo(f"✅ Installed recommended docker-compose.yml at {compose_path}")
+        typer.echo("   (Using MODE=native for best linking compatibility.)")
+        typer.echo("   Start it with: docker compose -f ~/.signal-cli/docker-compose.yml up -d")
+    elif compose_path.exists():
+        typer.echo(f"ℹ️  Using existing docker-compose at {compose_path}")
 
 
 @app.command("group-add")
@@ -274,11 +289,12 @@ def link(device_name: str = "signal-cli"):
         typer.echo(
             "Make sure the signal-cli-rest-api is running on the configured URL."
         )
+        compose_path = get_docker_compose_path()
         typer.echo(
-            "If you see 'UnsupportedOperationException', edit docker-compose.signal.yml"
+            f"If you see 'UnsupportedOperationException', edit {compose_path}"
         )
         typer.echo(
-            "to use MODE=native (or normal) instead of json-rpc, then restart the container."
+            "and set MODE=native (or normal), then restart the container."
         )
         raise typer.Exit(1)
 

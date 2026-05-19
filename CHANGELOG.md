@@ -5,6 +5,26 @@ All notable changes to the `signal-cli` Python package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-05
+
+### Added
+- Automatic provisioning of a recommended `docker-compose.yml` when running `signal-cli setup`.
+- New public helpers: `install_docker_compose()`, `get_docker_compose_path()`, `get_docker_compose_template()`.
+- The packaged `docker-compose.yml` now defaults to `MODE=native` (instead of `json-rpc`) for better device linking compatibility and fewer `UnsupportedOperationException` issues during QR code linking.
+
+### Changed
+- `signal-cli setup` now writes (or detects) the docker compose file under `~/.signal-cli/docker-compose.yml`.
+- Improved error messaging when linking fails due to mode incompatibility (now points to the actual compose file location).
+- Bumped package version to 0.4.0.
+
+### Fixed
+- Error message incorrectly referenced a non-existent `docker-compose.signal.yml` file.
+
+## [0.3.0] - Unreleased
+
+### Changed
+- Internal preparation for docker compose management (shipped in 0.4.0).
+
 ## [0.2.0] - 2026-05
 
 ### Added

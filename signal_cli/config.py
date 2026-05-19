@@ -4,9 +4,15 @@ import os
 import warnings
 from typing import Dict, Optional, Union
 
+try:
+    from importlib.resources import files, as_file
+except ImportError:  # Python < 3.9 fallback (we require >= 3.10 anyway)
+    from importlib_resources import files, as_file  # type: ignore
+
 # Default configuration directory for standalone use.
 DEFAULT_CONFIG_DIR = Path.home() / ".signal-cli"
 DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.json"
+DEFAULT_DOCKER_COMPOSE_FILE = DEFAULT_CONFIG_DIR / "docker-compose.yml"
 
 
 class SignalConfig:
@@ -143,3 +149,53 @@ class SignalConfig:
             stacklevel=2,
         )
         return self.resolve_recipient(name_or_id)
+
+
+# --------------------------------------------------------------------- #
+# Docker Compose helpers (installed alongside config)
+# --------------------------------------------------------------------- #
+
+def get_docker_compose_path() -> Path:
+    """Return the default location for the recommended docker-compose.yml."""
+    return DEFAULT_DOCKER_COMPOSE_FILE
+
+
+def get_docker_compose_template() -> str:
+    """Return the contents of the packaged docker-compose.yml template."""
+    try:
+        # Modern importlib.resources API (Python 3.9+)
+        template_path = files("signal_cli.data") / "docker-compose.yml"
+        return template_path.read_text(encoding="utf-8")
+    except Exception:
+        # Fallback: try to read from the source tree during development
+        dev_path = Path(__file__).parent / "data" / "docker-compose.yml"
+        if dev_path.exists():
+            return dev_path.read_text(encoding="utf-8")
+        raise FileNotFoundError(
+            "Could not load docker-compose.yml template from package data"
+        )
+
+
+def install_docker_compose(
+    target_path: Optional[Union[str, Path]] = None,
+    force: bool = False,
+) -> bool:
+    """
+    Write the recommended docker-compose.yml to the target location.
+
+    Args:
+        target_path: Where to write it (defaults to ~/.signal-cli/docker-compose.yml).
+        force: Overwrite even if the file already exists.
+
+    Returns:
+        True if a file was written, False if it already existed and force=False.
+    """
+    target = Path(target_path).expanduser() if target_path else DEFAULT_DOCKER_COMPOSE_FILE
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    if target.exists() and not force:
+        return False
+
+    content = get_docker_compose_template()
+    target.write_text(content)
+    return True
