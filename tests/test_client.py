@@ -7,8 +7,10 @@ from signal_cli.signal_client import SignalClient
 @responses.activate
 def test_list_remote_groups_returns_data():
     """SignalClient.list_remote_groups should call the correct endpoint and return the response."""
+    number = "+46700000001"  # single source of truth for test data
+
     cfg = SignalConfig()
-    cfg.number = "+46700000001"
+    cfg.number = number
     cfg.api_url = "http://localhost:8080"
 
     mock_response = [
@@ -18,7 +20,7 @@ def test_list_remote_groups_returns_data():
 
     responses.add(
         responses.GET,
-        "http://localhost:8080/v1/groups/+46700000001",
+        f"http://localhost:8080/v1/groups/{number}",
         json=mock_response,
         status=200,
     )
@@ -28,7 +30,7 @@ def test_list_remote_groups_returns_data():
 
     assert len(groups) == 2
     assert groups[0]["name"] == "Team A"
-    assert responses.calls[0].request.url.endswith("/v1/groups/+46735376000")
+    assert responses.calls[0].request.url.endswith(f"/v1/groups/{number}")
 
 
 @responses.activate
