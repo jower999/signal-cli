@@ -1,5 +1,5 @@
 [project]
-name = "signal-cli"
+name = "signal-cli-py"
 version = "0.2.0"
 description = "Reusable Python library and CLI for sending text and images via signal-cli-rest-api. Supports both individuals (phone numbers) and groups."
 readme = "README.md"
@@ -59,7 +59,6 @@ include = [
     "pyproject.toml",
 ]
 exclude = [
-    "schedule-*.png",
     "**/__pycache__/",
     "**/*.pyc",
     ".pytest_cache/",

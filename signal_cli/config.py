@@ -4,12 +4,9 @@ import os
 import warnings
 from typing import Dict, Optional, Union
 
-# Default configuration directory.
-# This path is kept for compatibility with the Golfmanager ecosystem.
-# Standalone users and other tools are strongly encouraged to use a custom
-# path (via constructor or SIGNAL_CLI_CONFIG environment variable).
-DEFAULT_CONFIG_DIR = Path.home() / ".golfmanager"
-DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / "signal.json"
+# Default configuration directory for standalone use.
+DEFAULT_CONFIG_DIR = Path.home() / ".signal-cli"
+DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.json"
 
 
 class SignalConfig:
@@ -18,7 +15,7 @@ class SignalConfig:
 
     Supports:
     - Custom config file location (constructor or SIGNAL_CLI_CONFIG env var)
-    - One-time automatic migration from the legacy "groups" key to "recipients"
+    - Backward compatibility with very old config files that used "groups" instead of "recipients"
     - Named shortcuts that can point to either Signal groups or individual phone numbers
     """
 
@@ -80,8 +77,8 @@ class SignalConfig:
     @classmethod
     def load(cls, config_path: Optional[Union[str, Path]] = None) -> "SignalConfig":
         config = cls(config_path=config_path)
-
         path = config._config_path
+
         if not path.exists():
             return config
 
@@ -98,7 +95,7 @@ class SignalConfig:
         if "recipients" in data:
             config.recipients = data.get("recipients", {}) or {}
         elif "groups" in data:
-            # One-time migration from legacy Golfmanager format
+            # One-time migration from legacy "groups" key (very old config files)
             config.recipients = data.get("groups", {}) or {}
             config._migrated_from_groups = True
 

@@ -7,14 +7,19 @@ It supports sending to both **Signal groups** and **individual phone numbers**, 
 ## Installation
 
 ```bash
-pip install signal-cli
+pip install signal-cli-py
 ```
 
-For CLI usage via isolated environment:
+For CLI usage via isolated environment (recommended):
 
 ```bash
-pipx install signal-cli
+pipx install signal-cli-py
 ```
+
+> **Note**: After installing, the command is still `signal-cli` (not `signal-cli-py`).  
+> Example: `signal-cli send --recipient team "Hello"`
+> 
+> This is intentional — the PyPI package name is `signal-cli-py` to avoid a naming conflict with an older package.
 
 ## Quick Start
 
@@ -23,7 +28,7 @@ pipx install signal-cli
 ```python
 from signal_cli import SignalClient, SignalConfig
 
-# Load from default config (~/.golfmanager/signal.json)
+# Load from default config (~/.signal-cli/config.json)
 client = SignalClient()
 
 # Send to a saved recipient (group or phone number)
@@ -60,7 +65,7 @@ signal-cli send --recipient team-updates --image ./chart.png "Weekly update"
 
 ## Configuration
 
-By default, configuration is stored at `~/.golfmanager/signal.json`.
+By default, configuration is stored at `~/.signal-cli/config.json`.
 
 You can override the config location in two ways:
 
@@ -89,7 +94,7 @@ If a group is missing, the recommended first step is to send a message in it fro
 
 Sending requires a running `signal-cli-rest-api` container (usually managed via Docker Compose).
 
-The recommended compose file is installed to `~/.golfmanager/docker-compose.signal.yml`.
+The recommended compose file is installed to `~/.signal-cli/docker-compose.yml` (or you can manage it yourself).
 
 ## Development
 

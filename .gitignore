@@ -33,7 +33,6 @@ venv
 !.vscode/tasks.json
 !.vscode/launch.json
 
-# Project-specific test data
-schedule-*.png
+# Generated images (if any are committed for docs)
 *.png
 !docs/*.png

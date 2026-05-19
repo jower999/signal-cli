@@ -12,8 +12,7 @@ class SignalClient:
     Client for sending messages and attachments via signal-cli-rest-api.
 
     Can be used either with a SignalConfig or with direct credentials.
-    SignalConfig is convenient when integrating with the Golfmanager CLI,
-    but standalone usage with explicit number/api_url is fully supported.
+    Standalone usage with explicit number/api_url is fully supported.
     """
 
     def __init__(

@@ -177,12 +177,12 @@ def send(
 
 
 @app.command()
-def link(device_name: str = "Golfmanager"):
+def link(device_name: str = "signal-cli"):
     """Generate a linking QR code and open it in your browser."""
     config = get_config()
 
     if not config.api_url:
-        typer.echo("No API URL configured. Please run 'golfmanager-signal setup' first.")
+        typer.echo("No API URL configured. Please run 'signal-cli setup' first.")
         raise typer.Exit(1)
 
     url = f"{config.api_url}/v1/qrcodelink?device_name={device_name}"
@@ -198,7 +198,7 @@ def link(device_name: str = "Golfmanager"):
 
         if is_png:
             # Modern behavior of signal-cli-rest-api: the endpoint returns the QR PNG directly
-            png_path = Path(tempfile.gettempdir()) / "golfmanager-signal-link-qr.png"
+            png_path = Path(tempfile.gettempdir()) / "signal-cli-link-qr.png"
             png_path.write_bytes(response.content)
 
             typer.echo(f"\nQR code saved as PNG: {png_path}")
@@ -236,7 +236,7 @@ def link(device_name: str = "Golfmanager"):
         typer.echo("2. Go to Profile → Linked Devices → 'Link New Device'")
         typer.echo("3. Scan the QR code")
         typer.echo("\nAfter scanning, wait 10–20 seconds, then run:")
-        typer.echo("  golfmanager signal status")
+        typer.echo("  signal-cli status")
 
     except requests.exceptions.RequestException as e:
         typer.echo(f"Failed to generate linking URI: {e}")
