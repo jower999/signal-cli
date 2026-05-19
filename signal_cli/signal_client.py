@@ -1,6 +1,6 @@
 import mimetypes
 import warnings
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional
 
 import requests
 

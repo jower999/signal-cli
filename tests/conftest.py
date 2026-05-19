@@ -2,8 +2,6 @@ import tempfile
 from pathlib import Path
 import pytest
 
-from signal_cli.config import SignalConfig
-
 
 @pytest.fixture
 def temp_config_path():
@@ -27,5 +25,6 @@ def config_with_legacy_groups(temp_config_path):
     temp_config_path.write_text(str(data).replace("'", '"'))  # simple json-like
     # Better to write proper JSON
     import json
+
     temp_config_path.write_text(json.dumps(data, indent=2))
     return temp_config_path

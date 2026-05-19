@@ -54,7 +54,11 @@ def test_send_uses_recipient():
     assert result["timestamp"] == 123456789
 
     request = responses.calls[0].request
-    payload = request.body.decode() if isinstance(request.body, (bytes, bytearray)) else request.body
+    payload = (
+        request.body.decode()
+        if isinstance(request.body, (bytes, bytearray))
+        else request.body
+    )
 
     assert "group.XYZ123" in payload  # the resolved recipient
     assert "Hello team" in payload

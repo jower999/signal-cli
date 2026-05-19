@@ -46,8 +46,10 @@ def group_add(name: str, recipient: str):
 @app.command("group-list")
 def group_list(
     available: bool = typer.Option(
-        False, "--available", "--remote",
-        help="List groups the linked Signal account is actually a member of (live from the service)."
+        False,
+        "--available",
+        "--remote",
+        help="List groups the linked Signal account is actually a member of (live from the service).",
     )
 ):
     """List saved named recipients, or live groups from Signal with --available."""
@@ -62,7 +64,9 @@ def group_list(
             raise typer.Exit(1)
 
         if not groups:
-            typer.echo("No groups found for this account (or the account is not yet linked).")
+            typer.echo(
+                "No groups found for this account (or the account is not yet linked)."
+            )
             return
 
         typer.echo("\nAvailable groups from your linked Signal account:\n")
@@ -73,28 +77,41 @@ def group_list(
             is_admin = g.get("isAdmin", False)
             typer.echo(f"  {i}. {name}")
             typer.echo(f"     ID: {gid}")
-            typer.echo(f"     Members: {len(members)}  |  Admin: {'yes' if is_admin else 'no'}")
+            typer.echo(
+                f"     Members: {len(members)}  |  Admin: {'yes' if is_admin else 'no'}"
+            )
             typer.echo()
 
         # Interactive picker to save groups with friendly names
-        if typer.confirm("Would you like to save any of these groups with a friendly name?", default=False):
+        if typer.confirm(
+            "Would you like to save any of these groups with a friendly name?",
+            default=False,
+        ):
             for g in groups:
                 gid = g.get("id") or g.get("groupId") or g.get("internal_id")
                 if not gid:
                     continue
                 default_name = g.get("name") or g.get("title") or ""
-                if typer.confirm(f"Save group '{default_name or gid}' ?", default=False):
-                    friendly = typer.prompt("Enter a friendly name for this group", default=default_name)
+                if typer.confirm(
+                    f"Save group '{default_name or gid}' ?", default=False
+                ):
+                    friendly = typer.prompt(
+                        "Enter a friendly name for this group", default=default_name
+                    )
                     if friendly:
                         config.recipients[friendly] = gid
                         config.save()
                         typer.echo(f"✅ Saved as '{friendly}'")
-            typer.echo("\nDone. Use 'group-list' (without --available) to see your saved names.")
+            typer.echo(
+                "\nDone. Use 'group-list' (without --available) to see your saved names."
+            )
         return
 
     # Default: list saved named recipients
     if not config.recipients:
-        typer.echo("No recipients configured yet. Use 'group-add <name> <id-or-phone>' or 'group-list --available' to discover groups.")
+        typer.echo(
+            "No recipients configured yet. Use 'group-add <name> <id-or-phone>' or 'group-list --available' to discover groups."
+        )
         return
 
     typer.echo("Saved recipients (groups and individuals):\n")
@@ -117,14 +134,20 @@ def group_remove(name: str):
 @app.command()
 def send(
     recipient: Optional[str] = typer.Option(
-        None, "--recipient", "-r",
-        help="Recipient name, group ID, or phone number (+467...). Use 'group-list --available' to discover groups."
+        None,
+        "--recipient",
+        "-r",
+        help="Recipient name, group ID, or phone number (+467...). Use 'group-list --available' to discover groups.",
     ),
     group: Optional[str] = typer.Option(
-        None, "--group", "-g",
-        help="Deprecated alias for --recipient (kept for compatibility with --share)."
+        None,
+        "--group",
+        "-g",
+        help="Deprecated alias for --recipient (kept for compatibility with --share).",
     ),
-    message: Optional[str] = typer.Argument(None, help="Message text (not needed if --json is used)"),
+    message: Optional[str] = typer.Argument(
+        None, help="Message text (not needed if --json is used)"
+    ),
     images: Optional[List[Path]] = typer.Option(None, "--image", "-i"),
     json_input: bool = typer.Option(False, "--json"),
 ):
@@ -151,7 +174,9 @@ def send(
                 if str(img_path) in ("-", "/dev/stdin"):
                     raw = sys.stdin.buffer.read()
                     if not raw:
-                        typer.echo("Error: No image data received on stdin for --image -")
+                        typer.echo(
+                            "Error: No image data received on stdin for --image -"
+                        )
                         raise typer.Exit(1)
                     b64 = base64.b64encode(raw).decode("utf-8")
                     attachments.append({"filename": "image.png", "data": b64})
@@ -164,11 +189,15 @@ def send(
                         attachments.append({"filename": img_path.name, "data": data})
 
     if not target:
-        typer.echo("Missing recipient. Use --recipient / -r (or the legacy --group / -g).")
+        typer.echo(
+            "Missing recipient. Use --recipient / -r (or the legacy --group / -g)."
+        )
         raise typer.Exit(1)
 
     if not message and not attachments:
-        typer.echo("Error: MESSAGE is required (or provide attachments via --json or --image)")
+        typer.echo(
+            "Error: MESSAGE is required (or provide attachments via --json or --image)"
+        )
         raise typer.Exit(1)
 
     client = SignalClient(config)
@@ -229,7 +258,9 @@ def link(device_name: str = "signal-cli"):
                 typer.echo("→ A QR code has been opened in your browser.")
             except Exception:
                 typer.echo("→ Could not open browser automatically.")
-                typer.echo(f"   Open this link manually to see the QR code:\n   {qr_url}")
+                typer.echo(
+                    f"   Open this link manually to see the QR code:\n   {qr_url}"
+                )
 
         typer.echo("\nNext steps:")
         typer.echo("1. Open the Signal app on your **phone**")
@@ -240,9 +271,15 @@ def link(device_name: str = "signal-cli"):
 
     except requests.exceptions.RequestException as e:
         typer.echo(f"Failed to generate linking URI: {e}")
-        typer.echo("Make sure the signal-cli-rest-api is running on the configured URL.")
-        typer.echo("If you see 'UnsupportedOperationException', edit docker-compose.signal.yml")
-        typer.echo("to use MODE=native (or normal) instead of json-rpc, then restart the container.")
+        typer.echo(
+            "Make sure the signal-cli-rest-api is running on the configured URL."
+        )
+        typer.echo(
+            "If you see 'UnsupportedOperationException', edit docker-compose.signal.yml"
+        )
+        typer.echo(
+            "to use MODE=native (or normal) instead of json-rpc, then restart the container."
+        )
         raise typer.Exit(1)
 
 
