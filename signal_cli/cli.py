@@ -15,6 +15,11 @@ from .config import (
     install_docker_compose,
     get_docker_compose_path,
 )
+from .docker import (
+    ephemeral_link_container,
+    should_auto_manage_for_linking,
+    LINK_CONTAINER_NAME,
+)
 from .signal_client import SignalClient
 
 app = typer.Typer(help="Signal messaging client (send to groups and individuals)")
@@ -36,14 +41,14 @@ def setup():
     config.api_url = api_url
     config.save()
 
-    # Ensure the recommended docker-compose.yml exists (with MODE=native by default)
+    # Ensure the recommended docker-compose.yml exists (with MODE=json-rpc by default)
     wrote_compose = install_docker_compose()
     compose_path = get_docker_compose_path()
 
     typer.echo("✅ Basic configuration saved.")
     if wrote_compose:
         typer.echo(f"✅ Installed recommended docker-compose.yml at {compose_path}")
-        typer.echo("   (Using MODE=native for best linking compatibility.)")
+        typer.echo("   (Using MODE=json-rpc for best performance.)")
         typer.echo(
             "   Start it with: docker compose -f ~/.signal-cli/docker-compose.yml up -d"
         )
@@ -222,11 +227,12 @@ def send(
     typer.echo(f"✅ Message sent. Timestamp: {result.get('timestamp')}")
 
 
-@app.command()
-def link(device_name: str = "signal-cli"):
-    """Generate a linking QR code and open it in your browser."""
-    config = get_config()
+def _perform_link_request(config: SignalConfig, device_name: str) -> None:
+    """Core logic that talks to /v1/qrcodelink and presents the QR code.
 
+    Extracted so it can be called from inside or outside the ephemeral container
+    context manager.
+    """
     if not config.api_url:
         typer.echo("No API URL configured. Please run 'signal-cli setup' first.")
         raise typer.Exit(1)
@@ -243,7 +249,6 @@ def link(device_name: str = "signal-cli"):
         typer.echo("\n✅ Linking QR code generated!")
 
         if is_png:
-            # Modern behavior of signal-cli-rest-api: the endpoint returns the QR PNG directly
             png_path = Path(tempfile.gettempdir()) / "signal-cli-link-qr.png"
             png_path.write_bytes(response.content)
 
@@ -257,16 +262,13 @@ def link(device_name: str = "signal-cli"):
                 typer.echo("→ Could not auto-open the image.")
                 typer.echo(f"   Please open this file manually:\n   {png_path}")
 
-            # We don't have the raw text URI in this case (it's inside the PNG)
             linking_uri = "(binary PNG QR code returned by API)"
 
         else:
-            # Older behavior: the endpoint returned the raw tsdevice:/... text URI
             linking_uri = response.text.strip()
 
             typer.echo(f"\nLinking URI:\n{linking_uri}\n")
 
-            # URL-encode and let quickchart turn it into a QR image
             encoded_uri = urllib.parse.quote(linking_uri, safe="")
             qr_url = f"https://quickchart.io/qr?text={encoded_uri}&size=300"
 
@@ -292,9 +294,47 @@ def link(device_name: str = "signal-cli"):
             "Make sure the signal-cli-rest-api is running on the configured URL."
         )
         compose_path = get_docker_compose_path()
-        typer.echo(f"If you see 'UnsupportedOperationException', edit {compose_path}")
-        typer.echo("and set MODE=native (or normal), then restart the container.")
+        typer.echo(
+            "If linking fails with UnsupportedOperationException or similar errors, "
+            "the `link` command normally starts a temporary dedicated container "
+            "using MODE=native. If that also fails, you can try stopping any running "
+            "signal container and running the link command again."
+        )
+        typer.echo(f"Compose file location: {compose_path}")
         raise typer.Exit(1)
+
+
+@app.command()
+def link(device_name: str = "signal-cli"):
+    """Generate a linking QR code and open it in your browser.
+
+    When a standard local docker-compose.yml is present, `signal-cli link`
+    automatically manages a short-lived container (MODE=native) that is
+    optimized for reliable device linking. Your normal service (whatever
+    MODE you have configured) is left untouched and is restarted afterwards.
+    """
+    config = get_config()
+
+    if should_auto_manage_for_linking(config):
+        # Use the ephemeral MODE=native container for the duration of linking.
+        # The context manager guarantees cleanup + restart of the user's normal
+        # service even on Ctrl-C, exceptions, or process termination.
+        with ephemeral_link_container() as ready:
+            if not ready:
+                typer.echo(
+                    "Could not start the dedicated linking container. "
+                    "Falling back to direct call against the configured API URL."
+                )
+                _perform_link_request(config, device_name)
+                return
+
+            typer.echo("Using temporary dedicated linking service (MODE=native)...")
+            _perform_link_request(config, device_name)
+            # The context manager will clean up and restart the normal service.
+        return
+
+    # Remote / custom setup – just talk to whatever the user configured.
+    _perform_link_request(config, device_name)
 
 
 if __name__ == "__main__":

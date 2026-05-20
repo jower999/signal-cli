@@ -9,18 +9,20 @@ services:
       - "8080:8080"
     environment:
       # MODE controls how signal-cli is executed inside the container.
-      # We default to 'native' for best device linking compatibility and good
-      # performance/memory characteristics for most linked-device use cases.
+      # Default is 'json-rpc' (long-lived JVM daemon) for best performance and
+      # lower steady-state resource use after the device is linked.
       #
       # Other supported values (from upstream signal-cli-rest-api):
-      #   - native            (recommended here): uses GraalVM native binary
-      #   - normal            (default upstream): spawns JVM per request (slowest)
-      #   - json-rpc          : long-lived JVM daemon (fastest, higher memory)
+      #   - json-rpc          : long-lived JVM daemon (default; fastest, higher memory)
       #   - json-rpc-native   : long-lived native binary daemon
+      #   - native            : GraalVM native binary (good linking compatibility)
+      #   - normal            : spawns JVM per request (slowest, upstream default)
       #
-      # If you see 'UnsupportedOperationException' during linking or other
-      # odd behavior, try switching to 'native' (or 'normal') and restart.
-      - MODE=native
+      # If you encounter 'UnsupportedOperationException' or linking problems,
+      # temporarily change to MODE=native (or normal), then re-run your link/setup
+      # command (it force-recreates the container). You can switch back to json-rpc
+      # after the phone is successfully linked.
+      - MODE=json-rpc
     volumes:
       - ${HOME}/.signal-cli/signal-data:/home/.local/share/signal-cli
     healthcheck:

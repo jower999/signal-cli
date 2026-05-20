@@ -97,9 +97,13 @@ Sending requires a running `signal-cli-rest-api` container (usually managed via 
 The recommended compose file is automatically installed to `~/.signal-cli/docker-compose.yml`
 when you run `signal-cli setup` (or you can manage it yourself).
 
-This package defaults to `MODE=native` in the generated compose file. `native` mode
-provides good performance while avoiding certain linking and compatibility issues
-that can occur with `json-rpc` mode (the upstream default in some contexts).
+This package defaults to `MODE=json-rpc` in the generated compose file (long-lived
+JVM daemon) for the best performance and resource characteristics in normal use.
+
+The `link` command automatically starts a short-lived container using `MODE=native`
+(the most reliable configuration for device linking) when it detects the standard
+local compose file. Your normal service is left exactly as you configured it and is
+restarted after linking. You should not need to edit the compose file for linking.
 
 ## Development
 

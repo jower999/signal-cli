@@ -5,6 +5,25 @@ All notable changes to the `signal-cli` Python package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-05-20
+
+### Added
+- `signal-cli link` (and `golfmanager signal link`) now automatically manages a short-lived
+  ephemeral container (`signal-cli-link`) running with `MODE=native` for reliable device
+  linking. The user's normal service (whatever MODE they have chosen in their compose file)
+  is stopped only for the duration of linking and restarted afterwards. The container is
+  guaranteed to be cleaned up even on Ctrl-C, unhandled exceptions, or process termination
+  (bulletproof atexit + signal handling). This works for both the standalone Python CLI and
+  the Golfmanager C# wrapper.
+
+### Changed
+- Reverted the packaged `docker-compose.yml` default from `MODE=native` back to `MODE=json-rpc`.
+  `json-rpc` (long-lived JVM daemon) is now the default again for best steady-state
+  performance and lower resource usage. Linking compatibility notes and instructions
+  have been updated in the template, CLI, README, and sibling golfmanager.aspire docs.
+  Use `MODE=native` (or `normal`) only as a temporary workaround if you hit
+  `UnsupportedOperationException` during initial device linking.
+
 ## [0.4.0] - 2026-05
 
 ### Added
