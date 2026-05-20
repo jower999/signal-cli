@@ -1,6 +1,6 @@
 [project]
 name = "signal-cli-py"
-version = "0.5.0"
+version = "0.5.1"
 description = "Reusable Python library and CLI for sending text and images via signal-cli-rest-api. Supports both individuals (phone numbers) and groups."
 readme = "README.md"
 license = "MIT"
