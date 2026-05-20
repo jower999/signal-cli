@@ -44,7 +44,7 @@ LINK_HEALTH_TIMEOUT_SECONDS = 60
 # --------------------------------------------------------------------------- #
 
 _cleanup_state: dict[str, object] = {
-    "user_compose_file": None,      # Path | None
+    "user_compose_file": None,  # Path | None
     "stopped_user_service": False,
     "link_container_started": False,
 }
@@ -52,11 +52,13 @@ _cleanup_state: dict[str, object] = {
 
 def _reset_cleanup_state() -> None:
     """Reset the module-level cleanup tracking state."""
-    _cleanup_state.update({
-        "user_compose_file": None,
-        "stopped_user_service": False,
-        "link_container_started": False,
-    })
+    _cleanup_state.update(
+        {
+            "user_compose_file": None,
+            "stopped_user_service": False,
+            "link_container_started": False,
+        }
+    )
 
 
 def _get_user_compose_file() -> Optional[Path]:
@@ -67,6 +69,7 @@ def _get_user_compose_file() -> Optional[Path]:
 # --------------------------------------------------------------------------- #
 # Low-level docker helpers
 # --------------------------------------------------------------------------- #
+
 
 def is_docker_available() -> bool:
     """Return True if the docker CLI is present and the daemon is reachable."""
@@ -98,7 +101,9 @@ def _run_docker(args: list[str], timeout: int = 30) -> subprocess.CompletedProce
 
 def is_container_running(name: str) -> bool:
     """Return True if a container with the given name is currently running."""
-    proc = _run_docker(["ps", "--filter", f"name={name}", "--format", "{{.Names}}"], timeout=5)
+    proc = _run_docker(
+        ["ps", "--filter", f"name={name}", "--format", "{{.Names}}"], timeout=5
+    )
     return name in (proc.stdout or "")
 
 
@@ -121,6 +126,7 @@ def get_container_logs(name: str, tail: int = 80) -> str:
 # User's normal service (the one defined by their docker-compose.yml)
 # --------------------------------------------------------------------------- #
 
+
 def has_standard_local_compose() -> bool:
     """True if the standard ~/.signal-cli/docker-compose.yml exists."""
     return get_docker_compose_path().exists()
@@ -139,7 +145,12 @@ def stop_user_service(compose_file: Optional[Path] = None) -> bool:
     if not is_docker_available():
         return False
 
-    args = ["compose", *_get_user_compose_args(compose_file), "down", "--remove-orphans"]
+    args = [
+        "compose",
+        *_get_user_compose_args(compose_file),
+        "down",
+        "--remove-orphans",
+    ]
     proc = _run_docker(args, timeout=20)
     # We consider "down" successful even if the compose file had nothing running.
     return proc.returncode == 0
@@ -165,6 +176,7 @@ def start_user_service(compose_file: Optional[Path] = None) -> bool:
 # Ephemeral link-only container (MODE=native)
 # --------------------------------------------------------------------------- #
 
+
 def _build_link_run_args() -> list[str]:
     """Return the argv for the `docker run` that starts the link container."""
     home = Path.home()
@@ -174,11 +186,15 @@ def _build_link_run_args() -> list[str]:
     return [
         "run",
         "-d",
-        "--name", LINK_CONTAINER_NAME,
+        "--name",
+        LINK_CONTAINER_NAME,
         "--rm",
-        "-e", "MODE=native",
-        "-p", "127.0.0.1:8080:8080",
-        "-v", f"{data_dir}:/home/.local/share/signal-cli",
+        "-e",
+        "MODE=native",
+        "-p",
+        "127.0.0.1:8080:8080",
+        "-v",
+        f"{data_dir}:/home/.local/share/signal-cli",
         LINK_IMAGE,
     ]
 
@@ -218,7 +234,13 @@ def wait_for_link_container_healthy(timeout: int = LINK_HEALTH_TIMEOUT_SECONDS) 
             # We use a plain curl inside the container or a quick HTTP request.
             # Using the host's curl keeps it simple and doesn't require requests.
             proc = _run_docker(
-                ["exec", LINK_CONTAINER_NAME, "curl", "-sf", "http://localhost:8080/v1/about"],
+                [
+                    "exec",
+                    LINK_CONTAINER_NAME,
+                    "curl",
+                    "-sf",
+                    "http://localhost:8080/v1/about",
+                ],
                 timeout=3,
             )
             if proc.returncode == 0:
@@ -257,11 +279,14 @@ def stop_ephemeral_link_container() -> bool:
 # Bulletproof cleanup
 # --------------------------------------------------------------------------- #
 
+
 def _perform_cleanup() -> None:
     """Idempotent cleanup function called from finally / atexit / signal handlers."""
     try:
         # 1. Always try to stop the link container if we started it (or if it exists).
-        if _cleanup_state.get("link_container_started") or is_container_running(LINK_CONTAINER_NAME):
+        if _cleanup_state.get("link_container_started") or is_container_running(
+            LINK_CONTAINER_NAME
+        ):
             stop_ephemeral_link_container()
 
         # 2. If we were the ones who stopped the user's normal service, bring it back.
@@ -301,6 +326,7 @@ def _register_cleanup_handlers() -> None:
 # Public context manager – the main API
 # --------------------------------------------------------------------------- #
 
+
 @contextmanager
 def ephemeral_link_container(
     *,
@@ -338,7 +364,6 @@ def ephemeral_link_container(
     _reset_cleanup_state()
     _cleanup_state["user_compose_file"] = user_compose
 
-    started_link = False
     stopped_user = False
 
     try:
@@ -354,8 +379,6 @@ def ephemeral_link_container(
         if not start_ephemeral_link_container():
             yield False
             return
-
-        started_link = True
 
         # Wait until the REST API inside it is healthy
         if not wait_for_link_container_healthy():
@@ -382,6 +405,7 @@ def ephemeral_link_container(
 # Convenience helper used by the CLI
 # --------------------------------------------------------------------------- #
 
+
 def should_auto_manage_for_linking(config: Optional[SignalConfig] = None) -> bool:
     """Return True if we believe we should automatically manage an ephemeral
     link container for the current configuration.
@@ -398,4 +422,6 @@ def should_auto_manage_for_linking(config: Optional[SignalConfig] = None) -> boo
 
     cfg = config or SignalConfig()
     url = (cfg.api_url or "").lower()
-    return url.startswith("http://localhost:8080") or url.startswith("http://127.0.0.1:8080")
+    return url.startswith("http://localhost:8080") or url.startswith(
+        "http://127.0.0.1:8080"
+    )
