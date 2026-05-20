@@ -18,7 +18,6 @@ from .config import (
 from .docker import (
     ephemeral_link_container,
     should_auto_manage_for_linking,
-    LINK_CONTAINER_NAME,
 )
 from .signal_client import SignalClient
 
