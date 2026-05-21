@@ -108,7 +108,17 @@ class SignalClient:
             json=payload,
             timeout=60,
         )
-        response.raise_for_status()
+
+        if not response.ok:
+            # Try to extract the real error message from the API response
+            try:
+                err = response.json().get("error") or response.text
+            except Exception:
+                err = response.text or str(response.status_code)
+            raise RuntimeError(
+                f"Failed to send message (HTTP {response.status_code}): {err}"
+            )
+
         return response.json()
 
     # ------------------------------------------------------------------ #
@@ -130,7 +140,16 @@ class SignalClient:
 
         url = f"{self.api_url}/v1/groups/{self.number}"
         resp = requests.get(url, timeout=30)
-        resp.raise_for_status()
+
+        if not resp.ok:
+            try:
+                err = resp.json().get("error") or resp.text
+            except Exception:
+                err = resp.text or str(resp.status_code)
+            raise RuntimeError(
+                f"Failed to list groups (HTTP {resp.status_code}): {err}"
+            )
+
         return resp.json()
 
     # ------------------------------------------------------------------ #

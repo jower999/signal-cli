@@ -17,7 +17,10 @@ from .config import (
 )
 from .docker import (
     ephemeral_link_container,
+    get_container_logs,
     should_auto_manage_for_linking,
+    LINK_CONTAINER_NAME,
+    _cleanup_state,
 )
 from .signal_client import SignalClient
 
@@ -222,7 +225,11 @@ def send(
         raise typer.Exit(1)
 
     client = SignalClient(config)
-    result = client.send(message, recipient=target, attachments=attachments)
+    try:
+        result = client.send(message, recipient=target, attachments=attachments)
+    except Exception as e:
+        typer.echo(f"❌ Send failed: {e}")
+        raise typer.Exit(1)
     typer.echo(f"✅ Message sent. Timestamp: {result.get('timestamp')}")
 
 
@@ -320,16 +327,59 @@ def link(device_name: str = "signal-cli"):
         # service even on Ctrl-C, exceptions, or process termination.
         with ephemeral_link_container() as ready:
             if not ready:
-                typer.echo(
-                    "Could not start the dedicated linking container. "
-                    "Falling back to direct call against the configured API URL."
-                )
+                err = _cleanup_state.get("link_start_error", "")
+                if err:
+                    typer.echo(
+                        "Failed to start dedicated linking container (MODE=native):"
+                    )
+                    typer.echo(err)
+                else:
+                    typer.echo(
+                        "Could not start the dedicated linking container. "
+                        "Falling back to direct call against the configured API URL."
+                    )
+
+                # Show any logs from a partially-started link container
+                logs = get_container_logs(LINK_CONTAINER_NAME)
+                if logs.strip():
+                    typer.echo("\n--- Container logs (if any) ---")
+                    typer.echo(logs.strip())
+
                 _perform_link_request(config, device_name)
                 return
 
             typer.echo("Using temporary dedicated linking service (MODE=native)...")
             _perform_link_request(config, device_name)
-            # The context manager will clean up and restart the normal service.
+
+            # Keep the native linking container alive while the user scans on their phone.
+            # Previously we exited immediately after printing the QR, which caused
+            # "invalid response from server" on the phone because the server was gone.
+            typer.echo("\n" + "=" * 60)
+            typer.echo("Linking server is ACTIVE (temporary MODE=native container).")
+            typer.echo(
+                "1. On your **phone**: Signal → Profile → Linked Devices → 'Link New Device'"
+            )
+            typer.echo(
+                "2. Scan the QR code (it may be in your browser or saved as PNG)"
+            )
+            typer.echo("3. Wait 10–30 seconds for the link to finish on the phone")
+            typer.echo(
+                "4. Press Enter here when the phone says the device is linked (or failed)"
+            )
+            typer.echo(
+                "   (or press Ctrl-C to abort — the normal service will be restarted)"
+            )
+            typer.echo("=" * 60)
+
+            try:
+                input("\n→ Press Enter when done (or Ctrl-C to cancel) ... ")
+                typer.echo(
+                    "\n✅ Done. Cleaning up the temporary linking container and restarting your normal service..."
+                )
+            except (EOFError, KeyboardInterrupt):
+                typer.echo("\nAborted by user. Cleaning up...")
+
+            # Exiting the 'with' block will now stop the link container and restart the normal one.
         return
 
     # Remote / custom setup – just talk to whatever the user configured.

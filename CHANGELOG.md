@@ -5,6 +5,11 @@ All notable changes to the `signal-cli` Python package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-05-21
+
+### Changed
+- Changed the link command to use a native mode container (ephemeral `signal-cli-link` with `MODE=native`) for more reliable device linking. The container is now kept alive during the QR scan, with better startup error reporting and automatic cleanup of the temporary native container before restarting the user's normal service.
+
 ## [0.5.1] - 2026-05-20
 
 ### Fixed

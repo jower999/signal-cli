@@ -57,6 +57,7 @@ def _reset_cleanup_state() -> None:
             "user_compose_file": None,
             "stopped_user_service": False,
             "link_container_started": False,
+            "link_start_error": "",
         }
     )
 
@@ -199,14 +200,14 @@ def _build_link_run_args() -> list[str]:
     ]
 
 
-def start_ephemeral_link_container() -> bool:
+def start_ephemeral_link_container() -> tuple[bool, str]:
     """Start the dedicated MODE=native link container.
 
-    The caller is responsible for ensuring the normal service is already down
-    (otherwise we will have a port conflict).
+    Returns (success, error_message). The error_message contains stdout+stderr
+    from the failed docker run when applicable.
     """
     if not is_docker_available():
-        return False
+        return False, "Docker is not available on this machine."
 
     # Make sure any stale container is gone
     if is_container_running(LINK_CONTAINER_NAME):
@@ -218,10 +219,13 @@ def start_ephemeral_link_container() -> bool:
 
     proc = _run_docker(_build_link_run_args(), timeout=60)
     if proc.returncode != 0:
-        return False
+        err = (proc.stdout or "") + (proc.stderr or "")
+        if not err.strip():
+            err = f"docker run exited with code {proc.returncode} (no output captured)"
+        return False, err.strip()
 
     _cleanup_state["link_container_started"] = True
-    return True
+    return True, ""
 
 
 def wait_for_link_container_healthy(timeout: int = LINK_HEALTH_TIMEOUT_SECONDS) -> bool:
@@ -376,7 +380,9 @@ def ephemeral_link_container(
             _cleanup_state["stopped_user_service"] = stopped_user
 
         # Start the dedicated link container
-        if not start_ephemeral_link_container():
+        started, start_error = start_ephemeral_link_container()
+        if not started:
+            _cleanup_state["link_start_error"] = start_error
             yield False
             return
 
